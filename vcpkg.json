@@ -1,0 +1,8 @@
+{
+  "name": "3dmap",
+  "version": "1",
+  "dependencies": [
+    "pcl",
+    "eigen3"
+  ]
+}
