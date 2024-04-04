@@ -2,3 +2,6 @@ out/
 .vs/
 .vscode/
 *.suo
+/vcpkg
+/vcpkg_installed
+CMakePresets.json
