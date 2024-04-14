@@ -3,6 +3,7 @@ from time import sleep,time
 import os
 import numpy as np
 
+
 class DataPath:
     def __init__(self, ego_dir,base_map_path):
         if not os.path.exists(ego_dir):
@@ -63,8 +64,8 @@ def show_pcd_file(path):
     pcd = o3d.io.read_point_cloud(path)
     o3d.visualization.draw_geometries([pcd])
 
-ego_dir="C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/localized_data"
-basemap="C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/basemaps/town02/wo_dropoff/w_noise/complete.pcd"
+ego_dir="G:/ai proj dl/project/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=6/day1"
+basemap="G:/ai proj dl/project/project/map_compression/data_1/basemaps/town02/w_dropoff/w_noise/pcds"
 dataPath=DataPath(ego_dir,basemap)
 show_video(dataPath)
 # show_pcd_file("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/src/3dMapUpdates/out/build/x64-release/clipped_cloud.pcd")
