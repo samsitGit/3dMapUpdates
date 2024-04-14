@@ -2,7 +2,7 @@ import open3d as o3d
 from time import sleep,time
 import os
 import numpy as np
-
+import re
 
 class DataPath:
     def __init__(self, ego_dir,base_map_path):
@@ -13,7 +13,9 @@ class DataPath:
         self.ego_dir = ego_dir
         self.base_map_dir = base_map_path
 
-
+def extract_number(filename):
+    match = re.search(r'\d+', filename)
+    return int(match.group()) if match else float('inf')
 
 def rotate_point_cloud(pcd):
     center=pcd.get_center()
@@ -25,7 +27,7 @@ def show_video(dataPath:DataPath):
     input_dir = dataPath.ego_dir
     input_files = os.listdir(input_dir)
     frame_count=len(input_files)
-    input_files=sorted(input_files,key=lambda x: int(os.path.splitext(x)[0]))
+    input_files = sorted(input_files, key=extract_number)
     # read first pcd file
     pcd = o3d.io.read_point_cloud(os.path.join(input_dir, input_files[0]))
 
@@ -64,7 +66,7 @@ def show_pcd_file(path):
     pcd = o3d.io.read_point_cloud(path)
     o3d.visualization.draw_geometries([pcd])
 
-ego_dir="G:/ai proj dl/project/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=6/day1"
+ego_dir="G:/ai proj dl/project/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=6/day1/pcds"
 basemap="G:/ai proj dl/project/project/map_compression/data_1/basemaps/town02/w_dropoff/w_noise/pcds"
 dataPath=DataPath(ego_dir,basemap)
 show_video(dataPath)
