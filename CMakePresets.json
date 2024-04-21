@@ -39,7 +39,7 @@
             "inherits": "x64-debug",
           "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Release",
-            "DCMAKE_TOOLCHAIN_FILE": "C:/Users/irfan/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            "DCMAKE_TOOLCHAIN_FILE": "C:/Users/irfan/vcpkg/scripts/buildsystems/vcpkg.cmake",
 
           }
         },

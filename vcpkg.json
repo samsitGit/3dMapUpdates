@@ -2,7 +2,12 @@
   "name": "3dmap",
   "version": "1",
   "dependencies": [
-    "pcl",
-    "eigen3"
+    {
+      "name": "pcl",
+      "features": ["visualization"]
+    },
+    {
+      "name": "eigen3"
+    }
   ]
 }
