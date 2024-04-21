@@ -5,30 +5,26 @@ import numpy as np
 import re
 
 class DataPath:
-    def __init__(self, ego_dir, base_map_path, ego2_dir):
+    def __init__(self, ego_dir, ego2_dir=None):
         if not os.path.exists(ego_dir):
             raise FileNotFoundError(f"{ego_dir} does not exist")
-        if not os.path.exists(base_map_path):
-            raise FileNotFoundError(f"{base_map_path} does not exist")
-        if not os.path.exists(ego2_dir):
-            raise FileNotFoundError(f"{ego2_dir} does not exist")
         self.ego_dir = ego_dir
-        self.base_map_dir = base_map_path
-        self.ego2_dir = ego2_dir
+        self.ego2_dir = ego2_dir if ego2_dir and os.path.exists(ego2_dir) else None
 
 def extract_number(filename):
     match = re.search(r'\d+', filename)
     return int(match.group()) if match else None
 
-def rotate_point_cloud(pcd):
-    center = pcd.get_center()
-    R = pcd.get_rotation_matrix_from_xyz((0, 0, np.pi/2))
-    pcd.rotate(R, center=center)
+def create_gradient_color(pcd, start_color, end_color):
+    points = np.asarray(pcd.points)
+    colors = np.linspace(start_color, end_color, len(points))
+    pcd.colors = o3d.utility.Vector3dVector(colors)
     return pcd
 
 class InteractiveVisualizer:
-    def __init__(self, data_path, camera_positions, lookat, up):
+    def __init__(self, data_path, step_size, camera_positions, lookat, up):
         self.data_path = data_path
+        self.step_size = step_size
         self.camera_positions = camera_positions
         self.lookat = lookat
         self.up = up
@@ -43,23 +39,21 @@ class InteractiveVisualizer:
             os.listdir(self.data_path.ego_dir),
             key=extract_number
         )
-        input_files_ego2 = sorted(
-            os.listdir(self.data_path.ego2_dir),
-            key=extract_number
-        )
         self.pcds = []
-        max_len = max(len(input_files_ego), len(input_files_ego2))
-        for i in range(max_len):
-            combined_pcd = o3d.geometry.PointCloud()
-            if i < len(input_files_ego):
-                pcd = o3d.io.read_point_cloud(os.path.join(self.data_path.ego_dir, input_files_ego[i]))
-                pcd.paint_uniform_color([1, 0, 0])  # Red color
-                combined_pcd += pcd
-            if i < len(input_files_ego2):
+        for i in range(len(input_files_ego)):
+            pcd = o3d.io.read_point_cloud(os.path.join(self.data_path.ego_dir, input_files_ego[i]))
+            pcd = create_gradient_color(pcd, [0, 0, 1], [1, 0, 0])  # Blue to red gradient
+            self.pcds.append(pcd)
+
+        if self.data_path.ego2_dir:
+            input_files_ego2 = sorted(
+                os.listdir(self.data_path.ego2_dir),
+                key=extract_number
+            )
+            for i in range(len(input_files_ego2)):
                 pcd = o3d.io.read_point_cloud(os.path.join(self.data_path.ego2_dir, input_files_ego2[i]))
-                pcd.paint_uniform_color([0, 1, 0])  # Green color
-                combined_pcd += pcd
-            self.pcds.append(combined_pcd)
+                pcd = create_gradient_color(pcd, [0, 1, 0], [1, 1, 0])  # Green to yellow gradient
+                self.pcds[i] += pcd  # Assumes matching indices and combines clouds with gradient colors
 
     def toggle_pause(self, vis):
         self.is_paused = not self.is_paused
@@ -68,13 +62,13 @@ class InteractiveVisualizer:
     def step_forward(self, vis):
         if not self.is_paused:
             self.toggle_pause(vis)
-        self.current_frame = min(self.current_frame + 1, self.frame_count - 1)
+        self.current_frame = min(self.current_frame + self.step_size, self.frame_count - 1)
         self.update_view(vis)
 
     def step_backward(self, vis):
         if not self.is_paused:
             self.toggle_pause(vis)
-        self.current_frame = max(self.current_frame - 1, 0)
+        self.current_frame = max(self.current_frame - self.step_size, 0)
         self.update_view(vis)
 
     def toggle_reverse(self, vis):
@@ -103,9 +97,9 @@ class InteractiveVisualizer:
             vis.update_renderer()
             if not self.is_paused:
                 if self.reverse_playback:
-                    self.current_frame = max(self.current_frame - 1, 0)
+                    self.current_frame = max(self.current_frame - self.step_size, 0)
                 else:
-                    self.current_frame = min(self.current_frame + 1, self.frame_count - 1)
+                    self.current_frame = min(self.current_frame + self.step_size, self.frame_count - 1)
                 
                 self.update_view(vis)
                 
@@ -121,11 +115,11 @@ class InteractiveVisualizer:
 
 # Example usage:
 ego_dir = "ego"
-basemap_dir = "basemap"
-ego2_dir = "ego2"
-data_path = DataPath(ego_dir, basemap_dir, ego2_dir)
+ego2_dir = ""
+data_path = DataPath(ego_dir, ego2_dir)
 camera_positions = [[1, 1, -1], [20, 20, 20]] 
 lookat = [0, 0, 0]
 up = [0, 1, 0]
-vis = InteractiveVisualizer(data_path, camera_positions, lookat, up)
+step_size = 5
+vis = InteractiveVisualizer(data_path, step_size, camera_positions, lookat, up)
 vis.run()
