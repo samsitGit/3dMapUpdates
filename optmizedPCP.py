@@ -16,11 +16,12 @@ def extract_number(filename):
     match = re.search(r'\d+', filename)
     return int(match.group()) if match else None
 
-def read_and_color_pcd(filepath, start_color, end_color):
+def read_and_color_pcd(filepath, start_color=None, end_color=None):
     pcd = o3d.io.read_point_cloud(filepath)
-    points = np.asarray(pcd.points)
-    colors = np.linspace(start_color, end_color, len(points))
-    pcd.colors = o3d.utility.Vector3dVector(colors)
+    if start_color:
+        points = np.asarray(pcd.points)
+        colors = np.linspace(start_color, end_color, len(points))
+        pcd.colors = o3d.utility.Vector3dVector(colors)
     return pcd
 
 class InteractiveVisualizer:
@@ -46,8 +47,8 @@ class InteractiveVisualizer:
             futures_ego = [
                 executor.submit(
                     read_and_color_pcd, 
-                    os.path.join(self.data_path.ego_dir, filename), 
-                    [0, 0, 1], [1, 0, 0]  # Blue to red gradient
+                    os.path.join(self.data_path.ego_dir, filename),
+                    [0.5,0.5,1], [0,0,1]
                 ) for filename in input_files_ego
             ]
 
@@ -63,7 +64,7 @@ class InteractiveVisualizer:
                     executor.submit(
                         read_and_color_pcd, 
                         os.path.join(self.data_path.ego2_dir, filename), 
-                        [0, 1, 0], [1, 1, 0]  # Green to yellow gradient
+                        [1, 0.078, 0.576], [1, 0, 0]
                     ) for filename in input_files_ego2
                 ]
             
