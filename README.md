@@ -1,13 +1,18 @@
 # CSCI739_Group4_Project
 
-## Installation for Windows
-1. Follow this to set up and install CMake and vcpkg:
-https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-cmd
-2. In vcpkg directory, run either bootstrap-vcpkg sh file or bat file.
-3. Integrate install: `vcpkg integrate install`
-4. Install PCL with vcpkg - `vcpkg install pcl:x64-windows-static`
-5. Let your "directory" be the vcpkg.cmake located in scripts > buildsystems folder where you installed vcpkg.
-6. Configure the project with CMake: `cmake -DVCPKG_TARGET_TRIPLEET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=<directory>`
+## Installation for Linux (works on school machines)
+1. You might want to update apt `apt update`
+2. Install cmake `apt install cmake`
+3. If you don't already have git, get it: `apt install git`
+4. Git clone vcpkg `git clone https://github.com/microsoft/vcpkg.git`
+5. In vcpkg directory `cd vcpkg`, run the file `./bootstrap-vcpkg.sh`
+6. Integrate install: `vcpkg integrate install`
+7. Install PCL with visualization module - `vcpkg install pcl[visualization]` (This can take 30 minutes or so)
+8. Git clone the repo `git clone https://github.com/samsitGit/CSCI739_Group4_Project.git`
+9. Go to the project `cd CSCI739_Group4_Project` then configure the project with CMake: `cmake`
+10. You may want to go into your 3dMapUpdates.cpp to change file paths for your ego and a complete trace unless you are on Irfan's computer.
+11. Compile the program to get an executable: `make`
+12. Run the file `./3dMapUpdates`
 
 ## Using visualize.py
 ```
