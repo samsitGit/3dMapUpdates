@@ -5,3 +5,6 @@ out/
 /vcpkg
 /vcpkg_installed
 CMakePresets.json
+/0
+/1
+/ego

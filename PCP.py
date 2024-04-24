@@ -6,11 +6,13 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 class DataPath:
-    def __init__(self, ego_dir, ego2_dir=None):
-        if not os.path.exists(ego_dir):
-            raise FileNotFoundError(f"{ego_dir} does not exist")
-        self.ego_dir = ego_dir
-        self.ego2_dir = ego2_dir if ego2_dir and os.path.exists(ego2_dir) else None
+    def __init__(self, directories):
+        self.directories = []
+        for dir in directories:
+            if os.path.exists(dir):
+                self.directories.append(dir)
+            else:
+                print(f"Warning: {dir} does not exist and will be skipped.")
 
 def extract_number(filename):
     match = re.search(r'\d+', filename)
@@ -18,15 +20,16 @@ def extract_number(filename):
 
 def read_and_color_pcd(filepath, start_color=None, end_color=None):
     pcd = o3d.io.read_point_cloud(filepath)
-    if start_color:
+    if start_color and end_color:
         points = np.asarray(pcd.points)
-        colors = np.linspace(start_color, end_color, len(points))
+        colors = np.linspace(np.array(start_color), np.array(end_color), len(points))
         pcd.colors = o3d.utility.Vector3dVector(colors)
     return pcd
 
 class InteractiveVisualizer:
-    def __init__(self, data_path, step_size, camera_positions, lookat, up):
+    def __init__(self, data_path, colors, step_size, camera_positions, lookat, up):
         self.data_path = data_path
+        self.colors = colors
         self.step_size = step_size
         self.camera_positions = camera_positions
         self.lookat = lookat
@@ -38,38 +41,30 @@ class InteractiveVisualizer:
         self.frame_count = len(self.pcds)
 
     def load_files(self):
-        input_files_ego = sorted(
-            os.listdir(self.data_path.ego_dir),
-            key=extract_number
-        )
-        
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            futures_ego = [
-                executor.submit(
-                    read_and_color_pcd, 
-                    os.path.join(self.data_path.ego_dir, filename),
-                    [0.5,0.5,1], [0,0,1]
-                ) for filename in input_files_ego
-            ]
-
-        self.pcds = [future.result() for future in futures_ego]
-
-        if self.data_path.ego2_dir:
-            input_files_ego2 = sorted(
-                os.listdir(self.data_path.ego2_dir),
+        self.pcds = []
+        for i, directory in enumerate(self.data_path.directories):
+            input_files = sorted(
+                os.listdir(directory),
                 key=extract_number
             )
+            color_pair = self.colors[i] if i < len(self.colors) else ([1, 1, 1], [1, 1, 1])  # Default to white if no color specified
             with ThreadPoolExecutor(max_workers=6) as executor:
-                futures_ego2 = [
+                futures = [
                     executor.submit(
-                        read_and_color_pcd, 
-                        os.path.join(self.data_path.ego2_dir, filename), 
-                        [1, 0.078, 0.576], [1, 0, 0]
-                    ) for filename in input_files_ego2
+                        read_and_color_pcd,
+                        os.path.join(directory, filename),
+                        color_pair[0], color_pair[1]
+                    ) for filename in input_files
                 ]
-            
-            for i, future in enumerate(futures_ego2):
-                self.pcds[i] += future.result()  # Combine with corresponding PCDs from the first directory
+                pcds_for_dir = [future.result() for future in futures]
+            if not self.pcds:
+                self.pcds = pcds_for_dir
+            else:
+                # Ensure lengths match for combining, fill with empty PCDs if necessary
+                max_len = max(len(self.pcds), len(pcds_for_dir))
+                self.pcds.extend([o3d.geometry.PointCloud()] * (max_len - len(self.pcds)))
+                pcds_for_dir.extend([o3d.geometry.PointCloud()] * (max_len - len(pcds_for_dir)))
+                self.pcds = [pcd1 + pcd2 for pcd1, pcd2 in zip(self.pcds, pcds_for_dir)]
 
     def toggle_pause(self, vis):
         self.is_paused = not self.is_paused
@@ -123,19 +118,51 @@ class InteractiveVisualizer:
                 frames_displayed += 1
                 fps = frames_displayed / (current_time - start_time)
                 print(f"FPS: {fps:.2f}\tProgress: {100 * self.current_frame / self.frame_count:.2f}%", end='\r')
-                time.sleep(0.005) 
+                time.sleep(0.01) 
             if self.current_frame == 0 or self.current_frame == self.frame_count - 1:
                 break
 
         vis.destroy_window()
 
 # Example usage:
-ego_dir = "ego"
-ego2_dir = "ego2"
-data_path = DataPath(ego_dir, ego2_dir)
-camera_positions = [[1, 1, -1], [20, 20, 20]] 
+ego1_path = "0"
+ego2_path = "1"
+ego3_path = "ego3"
+ego4_path = "ego4"
+ego5_path = "ego5"
+ego6_path = "ego6"
+directories = [ego1_path, ego2_path, ego3_path, ego4_path, ego5_path, ego6_path]
+
+# Define color constants
+RED = [1, 0, 0]
+ORANGE = [1, 0.5, 0]
+GREEN = [0, 1, 0]
+LIGHT_GREEN = [0.5, 1, 0]
+BLUE = [0, 0, 1]
+LIGHT_BLUE = [0, 0.5, 1]
+YELLOW = [1, 1, 0]
+PALE_RED = [1, 0.5, 0.5]
+CYAN = [0, 1, 1]
+LIGHT_CYAN = [0.5, 1, 1]
+MAGENTA = [1, 0, 1]
+LIGHT_MAGENTA = [1, 0.5, 1]
+
+# Define gradient variables
+# to have one constant color, just do (RED, RED) for example
+# pass in None instead if you want default colors
+ego1_color = (RED, RED)
+ego2_color = (LIGHT_BLUE, BLUE)
+ego3_color = (BLUE, LIGHT_BLUE)
+ego4_color = (YELLOW, PALE_RED)
+ego5_color = (CYAN, LIGHT_CYAN)
+ego6_color = (MAGENTA, LIGHT_MAGENTA)
+
+colors = [ego1_color, ego2_color, ego3_color,
+          ego4_color, ego5_color, ego6_color]
+data_path = DataPath(directories)
+camera_positions = [[1, 1, -1], [20, 20, 20]]
 lookat = [0, 0, 0]
 up = [0, 1, 0]
-step_size = 5
-vis = InteractiveVisualizer(data_path, step_size, camera_positions, lookat, up)
+step_size = 2 # you can change step size of the frames here
+vis = InteractiveVisualizer(data_path, colors, step_size, camera_positions, lookat, up)
 vis.run()
