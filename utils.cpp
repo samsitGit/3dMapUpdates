@@ -50,8 +50,8 @@ Eigen::Matrix4f convert_YPR_to_rotation_matrix(float yaw, float pitch, float rol
 }
 
 
-PointCloud::Ptr loadPointCloud(const std::string& file_path) {
-	PointCloud::Ptr cloud(new PointCloud);
+PointCloudPtr loadPointCloud(const std::string& file_path) {
+	PointCloudPtr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	if (pcl::io::loadPCDFile<pcl::PointXYZ>(file_path, *cloud) == -1) {
 		PCL_ERROR("Couldn't read file \n");
 		exit(-1);
@@ -74,7 +74,64 @@ std::vector<Eigen::Matrix4f> fetchPoses(const std::string& file_path) {
 	return poses;
 }
 
-int exists(const std::string& file_path) {
+int existsFile(const std::string& file_path) {
 	std::ifstream file(file_path);
 	return file.good();
+}
+
+int existsDirectory(const std::string& directory) {
+	struct stat info;
+	if (stat(directory.c_str(), &info) != 0) {
+		return 0;
+	}
+	else if (info.st_mode & S_IFDIR) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+double euclideanDistance(const Eigen::Matrix<float, 3, 1>& pose1, const Eigen::Matrix<float, 3, 1>& pose2) {
+	return (pose1 - pose2).norm();
+}
+
+pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> performNDTAlignment(const PointCloudPtr& input_cloud,
+	const PointCloudPtr& target_cloud, PointCloudPtr& output_cloud, Eigen::Matrix4f& pose, Eigen::Matrix4f& ground_truth) {
+
+	pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
+	// Set the resolution (voxel size)
+	float resolution = 0.5; // meters
+	ndt.setResolution(resolution);
+
+	// Set the step size
+	float step_size = 2; // meters
+	ndt.setStepSize(step_size);
+
+	// Set the transformation epsilon
+	float transformation_epsilon = 0.01f; // meters
+	ndt.setTransformationEpsilon(transformation_epsilon);
+
+	// Set the maximum number of iterations
+	int max_iterations = 100;
+	ndt.setMaximumIterations(max_iterations);
+
+	ndt.setInputSource(input_cloud);
+	ndt.setInputTarget(target_cloud);
+	// create initial guess as copy of pose with noise 
+	Eigen::Matrix4f init_guess = pose;
+	//applyGPSSimulatedNoise(init_guess);
+	auto translation = init_guess.block<3, 1>(0, 3);
+	std::cout << "Translational error before alignment: " << euclideanDistance(ground_truth.block<3, 1>(0, 3), translation) << std::endl;
+	ndt.align(*output_cloud, init_guess);
+	std::cout << "Translational error after alignment: " << euclideanDistance(ground_truth.block<3, 1>(0, 3), ndt.getFinalTransformation().block<3, 1>(0, 3)) << std::endl;
+	std::cout << ndt.getFinalNumIteration() << " iterations" << std::endl;
+	return ndt;
+}
+
+void applyNoise(Eigen::Matrix4f& pose,float intensity) {
+	Eigen::Vector3f noise = Eigen::Vector3f::Random() * intensity;
+	pose(0, 3) += noise(0);
+	pose(1, 3) += noise(1);
+	pose(2, 3) += noise(2);
 }

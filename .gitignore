@@ -5,3 +5,4 @@ out/
 /vcpkg
 /vcpkg_installed
 CMakePresets.json
+*.json
