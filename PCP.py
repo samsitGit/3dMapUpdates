@@ -118,14 +118,14 @@ class InteractiveVisualizer:
                 frames_displayed += 1
                 fps = frames_displayed / (current_time - start_time)
                 print(f"FPS: {fps:.2f}\tProgress: {100 * self.current_frame / self.frame_count:.2f}%", end='\r')
-                time.sleep(0.01) 
+                time.sleep(0.025) 
             if self.current_frame == 0 or self.current_frame == self.frame_count - 1:
                 break
 
         vis.destroy_window()
 
 # Example usage:
-ego1_path = "0"
+ego1_path = "clusteredappearedpoints"
 ego2_path = "1"
 ego3_path = "ego3"
 ego4_path = "ego4"
