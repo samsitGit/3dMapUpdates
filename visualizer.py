@@ -7,8 +7,10 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 class DataPath:
-    def __init__(self, base_map_file, directories):
-        self.base_map_file = base_map_file if base_map_file and os.path.exists(base_map_file) else None
+    def __init__(self, static_files, directories):
+        self.static_files = [file for file in static_files if os.path.exists(file)]
+        if not self.static_files:
+            print("No additional static files available.")
         self.directories = [dir for dir in directories if os.path.exists(dir)]
         if not self.directories:
             print("No additional directories available.")
@@ -26,15 +28,16 @@ def read_and_color_pcd(filepath, start_color=None, end_color=None):
     return pcd
 
 class InteractiveVisualizer:
-    def __init__(self, data_path, colors, step_size, camera_positions, lookat, up, video):
+    def __init__(self, data_path, sta_colors, ego_colors, step_size, camera_positions, lookat, up, video):
         self.data_path = data_path
-        self.colors = colors
+        self.ego_colors = ego_colors
+        self.sta_colors = sta_colors
         self.step_size = step_size
         self.camera_positions = camera_positions
         self.lookat = lookat
         self.up = up
         self.current_frame = 0
-        self.load_base_map()
+        self.load_static_files()
         self.video = video
 
         if video:
@@ -51,12 +54,10 @@ class InteractiveVisualizer:
             self.loaded_frames = 0
             self.load_frames(3)  # Initial load of 3 frames
 
-    def load_base_map(self):
-        if self.data_path.base_map_file:
-            self.base_map = read_and_color_pcd(self.data_path.base_map_file, [0.5, 0.5, 0.5], [0.8, 0.8, 0.8])
-        else:
-            print("No map loaded")
-            self.base_map = None
+    def load_static_files(self):
+        self.static_pcds = []
+        for file, color in zip(self.data_path.static_files, self.sta_colors):
+            self.static_pcds.append(read_and_color_pcd(file, color[0], color[1]))
 
     def load_files(self):
         self.pcds = []
@@ -65,7 +66,7 @@ class InteractiveVisualizer:
                 os.listdir(directory),
                 key=extract_number
             )
-            color_pair = self.colors[i] if i < len(self.colors) else ([1, 1, 1], [1, 1, 1])  # Default to white if no color specified
+            color_pair = self.ego_colors[i] if i < len(self.ego_colors) else (RED, RED)  # Default to red if no color specified
             with ThreadPoolExecutor(max_workers=6) as executor:
                 futures = [
                     executor.submit(
@@ -89,7 +90,7 @@ class InteractiveVisualizer:
             start_index = self.loaded_frames
             end_index = start_index + count
             files_to_load = self.files_per_dir[dir_index][start_index:end_index]
-            color_pair = self.colors[dir_index] if dir_index < len(self.colors) else ([1, 1, 1], [1, 1, 1])
+            color_pair = self.ego_colors[dir_index] if dir_index < len(self.ego_colors) else ([1, 1, 1], [1, 1, 1])
 
             with ThreadPoolExecutor(max_workers=6) as executor:
                 futures = [
@@ -109,16 +110,12 @@ class InteractiveVisualizer:
 
     def toggle_pause(self, vis):
         self.is_paused = not self.is_paused
-        print(f"Paused\n" if self.is_paused else "Running\n")
+        print(f"\nPaused" if self.is_paused else "Running")
 
     def update_view(self, vis):
         vis.clear_geometries()
-        vis.add_geometry(self.pcds[self.current_frame], reset_bounding_box=False)
-
-    def update_view(self, vis):
-        vis.clear_geometries()
-        if self.base_map:
-            vis.add_geometry(self.base_map, reset_bounding_box=False)
+        for pcd in self.static_pcds:
+            vis.add_geometry(pcd, reset_bounding_box=False)
         if self.current_frame < len(self.pcds):
             vis.add_geometry(self.pcds[self.current_frame], reset_bounding_box=False)
 
@@ -149,13 +146,15 @@ class InteractiveVisualizer:
         self.reverse_playback = not self.reverse_playback
         if self.is_paused:
             self.is_paused = not self.is_paused
-        print("Reversed" if self.reverse_playback else "Normal Playback")
+        print("\nReversed" if self.reverse_playback else "Normal Playback")
 
     def run(self):
         vis = o3d.visualization.VisualizerWithKeyCallback()
         vis.create_window()
-        vis.add_geometry(self.base_map)
-        vis.add_geometry(self.pcds[0] if self.pcds else self.base_map)
+        for pcd in self.static_pcds:
+            vis.add_geometry(pcd)
+        if self.pcds:
+            vis.add_geometry(self.pcds[0])
 
         vis.register_key_callback(ord(","), lambda vis: self.step_backward(vis))
         vis.register_key_callback(ord("."), lambda vis: self.step_forward(vis))
@@ -183,19 +182,26 @@ class InteractiveVisualizer:
                     fps = frames_displayed / (current_time - start_time)
                     print(f"FPS: {fps:.2f}\tProgress: {100 * self.current_frame / self.frame_count:.2f}%", end='\r')
                     time.sleep(0.025) 
-            if self.current_frame == 0 or self.current_frame == self.frame_count - 1:
-                break
+                if self.current_frame == 0 or self.current_frame == self.frame_count - 1:
+                    break
 
         vis.destroy_window()
 
 # Example usage:
-map_path = "complete.pcd" # give path to a file not directory
+sta1_path = ""
+sta2_path = "temp/0.pcd"
+sta3_path = "no static"
+sta4_path = "no static"
+sta5_path = "no static"
+sta6_path = "no static"
 ego1_path = "clusteredappearedpoints"
 ego2_path = "1"
 ego3_path = "no ego"
 ego4_path = "no ego"
 ego5_path = "no ego"
 ego6_path = "no ego"
+
+static_files = [sta1_path, sta2_path, sta3_path, sta4_path, sta5_path, sta6_path]
 directories = [ego1_path, ego2_path, ego3_path, ego4_path, ego5_path, ego6_path]
 
 # Define color constants
@@ -215,22 +221,32 @@ LIGHT_MAGENTA = [1, 0.5, 1]
 # Define gradient variables
 # to have one constant color, just do (RED, RED) for example
 # pass in None instead if you want default colors
-ego1_color = (RED, RED)
+sta1_color = (RED, RED)
+sta2_color = (RED, RED)
+sta3_color = (RED, RED)
+sta4_color = (RED, RED)
+sta5_color = (RED, RED)
+sta6_color = (RED, RED)
+
+ego1_color = (RED, PALE_RED)
 ego2_color = (LIGHT_BLUE, BLUE)
 ego3_color = (BLUE, LIGHT_BLUE)
 ego4_color = (YELLOW, PALE_RED)
 ego5_color = (CYAN, LIGHT_CYAN)
 ego6_color = (MAGENTA, LIGHT_MAGENTA)
 
-colors = [ego1_color, ego2_color, ego3_color,
+sta_colors = [ego1_color, ego2_color, ego3_color,
+          ego4_color, ego5_color, ego6_color]
+
+ego_colors = [ego1_color, ego2_color, ego3_color,
           ego4_color, ego5_color, ego6_color]
 
 mode = sys.argv[1] # 'video' or anything
-video_player = True if mode == 'video' else False
-data_path = DataPath(map_path, directories)
+video_player = mode == 'video'
+data_path = DataPath(static_files, directories)
 camera_positions = [[1, 1, -1], [20, 20, 20]]
 lookat = [0, 0, 0]
 up = [0, 1, 0]
 step_size = 2 # you can change step size of the frames here. keep in mind frame mode is 1 step size for proper management
-vis = InteractiveVisualizer(data_path, colors, step_size, camera_positions, lookat, up, video_player)
+vis = InteractiveVisualizer(data_path, sta_colors, ego_colors, step_size, camera_positions, lookat, up, video_player)
 vis.run()
