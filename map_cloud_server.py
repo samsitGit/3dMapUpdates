@@ -3,6 +3,7 @@ import open3d as o3d
 import os
 from werkzeug.utils import secure_filename
 import datetime
+from dateutil import parser
 
 app = Flask(__name__)
 
@@ -37,7 +38,7 @@ def fetch():
     client_id = request.args.get('client_id')
     last_time = request.args.get('last_time')
     if last_time:
-        last_time = datetime.datetime.fromisoformat(last_time)
+        last_time = parser.parse(last_time)
     else:
         last_time = datetime.datetime.min
 
