@@ -4,7 +4,7 @@ import requests
 base_url = 'http://127.0.0.1:5000'
 
 # Specify the path to the .pcd file
-file_path = '1/100.pcd'
+file_path = '1/200.pcd'
 
 # Test upload
 with open(file_path, 'rb') as file:
