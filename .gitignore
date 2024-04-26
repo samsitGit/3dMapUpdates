@@ -13,3 +13,4 @@ CMakePresets.json
 complete.pcd
 /temp
 /old1
+*.pcd
