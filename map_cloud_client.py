@@ -74,8 +74,7 @@ def save_points_to_pcd(points, file_path):
         file.write(f"POINTS {len(points)}\n")
         file.write("DATA ascii\n")
         for point in points:
-            coord = point['coordinates']
-            file.write(f"{' '.join(map(str, coord))}\n")
+            file.write(f"{' '.join(map(str, point))}\n")
 
 # adding frame 200, 300, 400
 ids1, commit_hash1 = upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'))
@@ -84,12 +83,12 @@ ids3, commit_hash3 = upload_changes(get_points_from_pcd_without_metadata('1/400.
 # deleting 300th
 ids4, commit_hash4 = upload_changes([], ids2)
 
-# print(commit_hash1, commit_hash2, commit_hash3)
+commits = [commit_hash1, commit_hash2, commit_hash3, commit_hash4]
+for commit in commits:
+    print(commit)
 
 # test fetch
-results = fetch_updates(commit_hash1)
+# results = fetch_updates('ceec50505f3f579f6b7a412cbf3854209bef81ca8a06d56671f0dc62c9e5304f')
+results = fetch_updates('commit_hash1')
 commit_hash = results['latest_commit_hash']
-
-# fetching at hash 1 will result in getting commit 2, 3, 4 which results in just 3 for update since 2 and 4 cancel each other out
-# fetching at hash 2 will result in getting commit 3, 4 which results in 3 and 4 for update since 4 will delete existing 2
-# fetching at hash 3 will result in getting commit 4 which results in just 4 for update to delete 2
+print(commit_hash)

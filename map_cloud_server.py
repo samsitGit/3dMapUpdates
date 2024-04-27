@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from square_root_decomposition import *
 import datetime
 import hashlib
 import json
@@ -6,7 +7,9 @@ import random
 
 app = Flask(__name__)
 
-# Store the commits
+# Store commits in blocks
+blocks = []
+block_size = 8
 commits = []
 
 def generate_unique_id():
@@ -29,31 +32,40 @@ def upload():
         "deletions": data.get('deletions', []),
         "hash": commit_hash
     }
-    commits.append(commit)
+
+    # Add commit to the latest block or create a new block if necessary
+    if not blocks or len(blocks[-1].commits) >= block_size:
+        blocks.append(CommitBlock())
+    blocks[-1].add_commit(commit)
+
     return jsonify({"message": "Commit created", "ids": ids, "commit_hash": commit_hash}), 200
 
 @app.route('/fetch', methods=['GET'])
 def fetch():
     last_hash = request.args.get('last_hash')
-    index = next((i for i, commit in enumerate(commits) if commit['hash'] == last_hash), -1)
+    all_additions = {}
+    all_deletions = set()
 
-    # Aggregate changes from the commit after the last known to the latest
-    additions = []
-    deletions = []
-    latest_hash = commits[-1]['hash'] if commits else None
-    
-    for commit in commits[index + 1:]:
-        # Aggregate additions and deletions
-        additions.extend(commit['additions'])
-        deletions.extend(commit['deletions'])
+    # Find the block index for the last known hash
+    found = False
+    for block in blocks:
+        for commit in block.commits:
+            if commit['hash'] == last_hash:
+                found = True
+            if found:
+                for addition in commit['additions']:
+                    if addition['id'] not in all_deletions:
+                        all_additions[addition['id']] = addition['coordinates']
+                for deletion in commit['deletions']:
+                    if deletion in all_additions:
+                        del all_additions[deletion]
+                    all_deletions.add(deletion)
 
-    # Optimize: remove redundant changes
-    final_additions = [add for add in additions if add['id'] not in deletions]
-    final_deletions = [del_id for del_id in deletions if del_id not in [add['id'] for add in additions]]
+    latest_hash = blocks[-1].commits[-1]['hash'] if blocks and blocks[-1].commits else None
 
     return jsonify({
-        "additions": final_additions, 
-        "deletions": final_deletions, 
+        "additions": list(all_additions.values()),
+        "deletions": list(all_deletions),
         "latest_commit_hash": latest_hash
     }), 200
 
