@@ -1,12 +1,7 @@
 import requests
-import random
 
 # Base URL of the Flask server
 base_url = 'http://127.0.0.1:5000'
-
-def generate_unique_id():
-    """Generate a random 64-bit integer."""
-    return random.getrandbits(64)
 
 def get_points_from_pcd_without_metadata(file_path):
     """
@@ -28,17 +23,19 @@ def generate_full_delete_tensor(points):
 
 def upload_changes(additions, deletions=[]):
     """
-    Sends additions with unique IDs and deletions to the server.
+    Sends additions and deletions to the server.
     """
-    # Generate unique IDs for new points
-    points_with_ids = [{"id": generate_unique_id(), "coordinates": point} for point in additions]
     data = {
-        "additions": points_with_ids,
+        "additions": additions,
         "deletions": deletions
     }
     response = requests.post(f"{base_url}/upload", json=data)
-    print("Upload response:", response.text)
-    return [point['id'] for point in points_with_ids]  # Return generated IDs for future reference
+    if response.status_code == 200:
+        print("Upload response:", response.json())
+        return response.json()['ids']
+    else:
+        print("Failed to upload:", response.text)
+        return []
 
 def fetch_current_point_cloud():
     """
