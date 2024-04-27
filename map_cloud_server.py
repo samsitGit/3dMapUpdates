@@ -30,4 +30,4 @@ def fetch():
     return jsonify({"points": np.asarray(current_point_cloud.points).tolist()}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False) # set to false to avoid restarting during test
