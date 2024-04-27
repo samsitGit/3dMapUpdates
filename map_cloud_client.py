@@ -1,8 +1,12 @@
 import requests
-import numpy as np
+import random
 
 # Base URL of the Flask server
 base_url = 'http://127.0.0.1:5000'
+
+def generate_unique_id():
+    """Generate a random 64-bit integer."""
+    return random.getrandbits(64)
 
 def get_points_from_pcd_without_metadata(file_path):
     """
@@ -22,16 +26,19 @@ def generate_full_delete_tensor(points):
     """
     return list(range(len(points)))
 
-def upload_changes(additions, deletions):
+def upload_changes(additions, deletions=[]):
     """
-    Sends changes to the server.
+    Sends additions with unique IDs and deletions to the server.
     """
+    # Generate unique IDs for new points
+    points_with_ids = [{"id": generate_unique_id(), "coordinates": point} for point in additions]
     data = {
-        "additions": additions,
+        "additions": points_with_ids,
         "deletions": deletions
     }
     response = requests.post(f"{base_url}/upload", json=data)
     print("Upload response:", response.text)
+    return [point['id'] for point in points_with_ids]  # Return generated IDs for future reference
 
 def fetch_current_point_cloud():
     """
@@ -39,11 +46,13 @@ def fetch_current_point_cloud():
     """
     response = requests.get(f"{base_url}/fetch")
     if response.status_code == 200:
-        points = response.json()['points']
-        save_points_to_pcd(points, 'output_point_cloud.pcd')
+        points_with_ids = response.json()['points']
+        save_points_to_pcd(points_with_ids, 'output_point_cloud.pcd')
         print("Fetched point cloud saved as 'output_point_cloud.pcd'")
+        return [point['id'] for point in points_with_ids]  # Return generated IDs for future reference
     else:
         print("Failed to fetch point cloud:", response.text)
+        return []
 
 def save_points_to_pcd(points, file_path):
     """
@@ -61,13 +70,17 @@ def save_points_to_pcd(points, file_path):
         file.write(f"POINTS {len(points)}\n")
         file.write("DATA ascii\n")
         for point in points:
-            file.write(f"{' '.join(map(str, point))}\n")
+            coord = point['coordinates']
+            file.write(f"{' '.join(map(str, coord))}\n")
 
-upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'), [])
-upload_changes(get_points_from_pcd_without_metadata('1/300.pcd'), [])
-upload_changes(get_points_from_pcd_without_metadata('1/400.pcd'), [])
+upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'))
+ids = upload_changes(get_points_from_pcd_without_metadata('1/300.pcd'))
+upload_changes(get_points_from_pcd_without_metadata('1/400.pcd'))
 # deleting 300th
-points = get_points_from_pcd_without_metadata('1/300.pcd')
-deletions = generate_full_delete_tensor(points)
-upload_changes(points, deletions)
+upload_changes([],ids)
 fetch_current_point_cloud()
+
+# # delete all
+# ids = fetch_current_point_cloud()
+# upload_changes([],ids)
+# fetch_current_point_cloud()
