@@ -1,42 +1,61 @@
 from flask import Flask, request, jsonify
 import datetime
+import hashlib
+import json
 import random
 
 app = Flask(__name__)
 
-# This will hold our point cloud with unique IDs
-point_cloud = {}
+# Store the commits
+commits = []
 
 def generate_unique_id():
     """Generate a random 64-bit integer."""
     return random.getrandbits(64)
 
+def generate_hash(data):
+    """ Generate a unique hash for each commit based on the data and the current time. """
+    hash_data = json.dumps(data, sort_keys=True) + datetime.datetime.utcnow().isoformat()
+    return hashlib.sha256(hash_data.encode()).hexdigest()
+
 @app.route('/upload', methods=['POST'])
 def upload():
     data = request.json
-    global point_cloud
-    ids = []
-
-    # Handle additions
-    point_upload_time = datetime.datetime.utcnow().isoformat()
-    for point in data['additions']:
-        point_id = generate_unique_id()
-        point_cloud[point_id] = {"coordinates": point, "upload_time": point_upload_time}
-        ids.append(point_id)
-
-    # Handle deletions
-    if 'deletions' in data:
-        for point_id in data['deletions']:
-            if point_id in point_cloud:
-                del point_cloud[point_id]
-
-    return jsonify({"message": "Changes applied successfully", "ids": ids}), 200
+    ids = [generate_unique_id() for _ in data.get('additions', [])]
+    commit_hash = generate_hash({"additions": ids, "deletions": data.get('deletions', [])})
+    commit = {
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "additions": [{"id": id, "coordinates": point} for id, point in zip(ids, data.get('additions', []))],
+        "deletions": data.get('deletions', []),
+        "hash": commit_hash
+    }
+    commits.append(commit)
+    return jsonify({"message": "Commit created", "ids": ids, "commit_hash": commit_hash}), 200
 
 @app.route('/fetch', methods=['GET'])
 def fetch():
-    points = [{"id": point_id, "coordinates": data["coordinates"], "upload_time": data["upload_time"]} 
-              for point_id, data in point_cloud.items()]
-    return jsonify({"points": points}), 200
+    last_hash = request.args.get('last_hash')
+    index = next((i for i, commit in enumerate(commits) if commit['hash'] == last_hash), -1)
+
+    # Aggregate changes from the commit after the last known to the latest
+    additions = []
+    deletions = []
+    latest_hash = commits[-1]['hash'] if commits else None
+    
+    for commit in commits[index + 1:]:
+        # Aggregate additions and deletions
+        additions.extend(commit['additions'])
+        deletions.extend(commit['deletions'])
+
+    # Optimize: remove redundant changes
+    final_additions = [add for add in additions if add['id'] not in deletions]
+    final_deletions = [del_id for del_id in deletions if del_id not in [add['id'] for add in additions]]
+
+    return jsonify({
+        "additions": final_additions, 
+        "deletions": final_deletions, 
+        "latest_commit_hash": latest_hash
+    }), 200
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False) # set to false to avoid restarting during test

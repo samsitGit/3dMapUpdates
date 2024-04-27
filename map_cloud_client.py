@@ -23,7 +23,7 @@ def generate_full_delete_tensor(points):
 
 def upload_changes(additions, deletions=[]):
     """
-    Sends additions and deletions to the server.
+    Sends additions and deletions to the server, handles both IDs and commit hashes.
     """
     data = {
         "additions": additions,
@@ -31,25 +31,32 @@ def upload_changes(additions, deletions=[]):
     }
     response = requests.post(f"{base_url}/upload", json=data)
     if response.status_code == 200:
-        print("Upload response:", response.json())
-        return response.json()['ids']
+        response_data = response.json()
+        print("Upload response:", response_data)
+        return response_data['ids'], response_data['commit_hash']
     else:
         print("Failed to upload:", response.text)
-        return []
+        return [], None
 
-def fetch_current_point_cloud():
+def fetch_updates(last_known_hash):
     """
-    Fetches the current state of the point cloud from the server and saves it to a .pcd file.
+    Fetches updates from the server and saves additions and deletions to separate .pcd files.
+    Includes handling of the latest commit hash.
     """
-    response = requests.get(f"{base_url}/fetch")
+
+    response = requests.get(f"{base_url}/fetch", params={"last_hash": last_known_hash})
     if response.status_code == 200:
-        points_with_ids = response.json()['points']
-        save_points_to_pcd(points_with_ids, 'output_point_cloud.pcd')
-        print("Fetched point cloud saved as 'output_point_cloud.pcd'")
-        return [point['id'] for point in points_with_ids]  # Return generated IDs for future reference
+        updates = response.json()
+
+        # send additions to a file for visualizing
+        if 'additions' in updates:
+            save_points_to_pcd(updates['additions'], 'output_point_cloud.pcd')
+        
+        print(f"Updates fetched and saved")
+        return updates
     else:
-        print("Failed to fetch point cloud:", response.text)
-        return []
+        print("Failed to fetch updates:", response.text)
+        return None
 
 def save_points_to_pcd(points, file_path):
     """
@@ -70,14 +77,15 @@ def save_points_to_pcd(points, file_path):
             coord = point['coordinates']
             file.write(f"{' '.join(map(str, coord))}\n")
 
-upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'))
-ids = upload_changes(get_points_from_pcd_without_metadata('1/300.pcd'))
-upload_changes(get_points_from_pcd_without_metadata('1/400.pcd'))
-# deleting 300th
-upload_changes([],ids)
-fetch_current_point_cloud()
+# # adding frame 200, 300, 400
+# ids1, commit_hash1 = upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'))
+# ids2, commit_hash2 = upload_changes(get_points_from_pcd_without_metadata('1/300.pcd'))
+# ids3, commit_hash3 = upload_changes(get_points_from_pcd_without_metadata('1/400.pcd'))
+# # deleting 300th
+# upload_changes([], ids2)
 
-# # delete all
-# ids = fetch_current_point_cloud()
-# upload_changes([],ids)
-# fetch_current_point_cloud()
+# print(commit_hash1, commit_hash2, commit_hash3)
+
+# try fetching from commit hash 1, 2, 3 and so on
+results = fetch_updates('179b85ab24f35786b399851d06dd52555cb2b2d8991dda1236698ba528094c50')
+commit_hash = results['latest_commit_hash']
