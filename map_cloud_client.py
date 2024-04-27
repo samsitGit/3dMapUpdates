@@ -63,9 +63,9 @@ def save_points_to_pcd(points, file_path):
         for point in points:
             file.write(f"{' '.join(map(str, point))}\n")
 
-# upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'), [])
-# upload_changes(get_points_from_pcd_without_metadata('1/300.pcd'), [])
-# upload_changes(get_points_from_pcd_without_metadata('1/400.pcd'), [])
+upload_changes(get_points_from_pcd_without_metadata('1/200.pcd'), [])
+upload_changes(get_points_from_pcd_without_metadata('1/300.pcd'), [])
+upload_changes(get_points_from_pcd_without_metadata('1/400.pcd'), [])
 # deleting 300th
 points = get_points_from_pcd_without_metadata('1/300.pcd')
 deletions = generate_full_delete_tensor(points)
