@@ -1,5 +1,8 @@
 #include "FrameProcessor.h"
 
+
+
+
 FrameProcessor::FrameProcessor(Basemap* basemap, Trace* trace) : basemap(basemap), trace(trace)
 {
 
@@ -18,49 +21,41 @@ std::vector<PointCloudPtr> FrameProcessor::processFrame(int frame) {
 	applyNoise(ground_truth,0.06);
 	//PointCloudPtr clipped_map=basemap->clipByRadius(ground_truth, 100);
 	pcl::transformPointCloud(*frame_cloud, *frame_cloud, ground_truth);
+	timer.start("appeared cluster extraction");
 	PointCloudPtr appearedPoints = subtract(frame_cloud);
 	std::vector<PointCloudPtr> clusters = extractClusters(appearedPoints);
+	timer.stop("appeared cluster extraction");
 	for (const auto& cluster : clusters) {
 		appearedPointsProcessor->addCluster(Cluster(cluster, frame));
 	}
-	//if (aggregated_frames_count < 30) {
-	//	*aggregated_frames += *frame_cloud;
-	//	aggregated_frames_count++;
-	//}
-	//else {
-	//	std::cout<<"Number of points in aggregated frame: "<<aggregated_frames->size()<<std::endl;
-	//	removeOutliers(aggregated_frames, 70, 1);
-	//	std::cout<<"Number of points in aggregated frame after outlier removal: "<<aggregated_frames->size()<<std::endl;
-	//	PointCloudPtr disappearedPoints = subtractMap(aggregated_frames, basemap->getMap());
-	//	clusters = extractClusters(disappearedPoints);
-	//	for (const auto& cluster : clusters) {
-	//		disappearedPointsProcessor->addCluster(Cluster(cluster, frame));
-	//	}
-	//	aggregated_frames_count = 0;
-	//	aggregated_frames = PointCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
-	//}
-	PointCloudPtr disappearedPoints = rayTraceDisappearedPoints(frame_cloud, ground_truth, 0.1);
+	timer.start("disappeared cluster extraction");
+	PointCloudPtr disappearedPoints = vectorRayTraceDisappearedPoints(frame_cloud, basemap->clipByRadius(ground_truth,20), ground_truth, 0.03);
 	clusters = extractClusters(disappearedPoints);
+	timer.stop("disappeared cluster extraction");
 	for (const auto& cluster : clusters) {
 		disappearedPointsProcessor->addCluster(Cluster(cluster, frame));
 	}
 
 	//std::cout<< "Number of clusters in processor: " << appearedPointsProcessor->getClusterTraces().size() << std::endl;
+	timer.start("appeared cluster updates");
 	std::vector<Cluster> clusterUpdates = appearedPointsProcessor->getClusterUpdates(frame);
+	timer.stop("appeared cluster updates");
 	PointCloudPtr addedPointUpdates(new pcl::PointCloud<pcl::PointXYZ>);
 	PointCloudPtr disappearedPointUpdates(new pcl::PointCloud<pcl::PointXYZ>);
 	for (auto& cluster : clusterUpdates) {
 		basemap->addCluster(cluster);
 		*addedPointUpdates += *cluster.cloud;
 	}
+	timer.start("disappeared cluster updates");
 	clusterUpdates = disappearedPointsProcessor->getClusterUpdates(frame);
+	timer.stop("disappeared cluster updates");
 	std::cout<<"Number of clusters in processor: "<<clusterUpdates.size()<<std::endl;
 	for (auto& cluster : clusterUpdates) {
 		//basemap->removeCluster(cluster);
 		*disappearedPointUpdates += *cluster.cloud;
 	}
 	clouds.push_back(addedPointUpdates);
-	clouds.push_back(disappearedPointUpdates);
+	clouds.push_back(disappearedPoints);
 	//clouds.push_back(clipped_map);
 	return clouds;
 }
@@ -108,6 +103,61 @@ PointCloudPtr FrameProcessor::subtract(PointCloudPtr frame) {
 	
 }
 
+std::vector<Eigen::Vector3f> FrameProcessor::vectorRayTracePoint(Eigen::Vector3f lead, NearestVector* nearestVector, float radius) {
+	std::vector<Eigen::Vector3f> output;
+	std::vector<Eigen::Vector3f> similarVectors = nearestVector->getSimilarVectors(lead, 20);
+	float eps = 0.06; //Expected maximum localization error in meters
+	//Verify if the projection of a similar vector is radius away from the lead
+	for (const auto& vector : similarVectors) {
+		//If magnitude of vector is higher than lead, ignore
+		if (vector.norm() > lead.norm()-eps) {
+			continue;
+		}
+		//Find projection of vector on lead
+		Eigen::Vector3f projection = lead.dot(vector) / lead.dot(lead) * lead;
+		//if projection is in opposite direction of lead, ignore
+		if (lead.dot(projection) < 0) {
+			continue;
+		}
+		if ((projection - vector).norm() < radius) {
+			output.push_back(vector);
+		}
+	}
+	return output;
+}
+
+PointCloudPtr FrameProcessor::vectorRayTraceDisappearedPoints(PointCloudPtr frame, PointCloudPtr map, Eigen::Matrix4f origin, float radius) {
+	PointCloudPtr output(new pcl::PointCloud<pcl::PointXYZ>);
+	//use ctpl to parallelize this
+	std::vector<std::future<std::vector<Eigen::Vector3f>>> futures;
+	NearestVector* nearestVector = new NearestVector();
+	pcl::transformPointCloud(*map, *map, origin.inverse()); // Transform map to frame
+	timer.start("indexing vectors");
+	for (int i = 0; i < map->size(); i++) {
+		pcl::PointXYZ point = map->points[i];
+		Eigen::Vector3f vector(point.x, point.y, point.z);
+		nearestVector->addVector(vector);
+	}
+	timer.stop("indexing vectors");
+	for (int i = 0; i < frame->size(); i++) {
+		pcl::PointXYZ point = frame->points[i];
+		futures.push_back(pool->push([this, point, nearestVector,radius](int id) {
+			return vectorRayTracePoint(Eigen::Vector3f(point.x, point.y, point.z), nearestVector, radius);
+		}));
+	}
+	for (auto& future : futures) {
+		std::vector<Eigen::Vector3f> neighbors = future.get();
+		for (const auto& neighbor : neighbors) {
+			pcl::PointXYZ pcl_point;
+			pcl_point.x = neighbor(0);
+			pcl_point.y = neighbor(1);
+			pcl_point.z = neighbor(2);
+			output->push_back(pcl_point);
+		}
+	}
+	pcl::transformPointCloud(*output, *output, origin); // Transform back to map
+	return output;
+}
 
 PointCloudPtr FrameProcessor::rayTraceDisappearedPoints(PointCloudPtr frame,Eigen::Matrix4f origin,float resolution) {
 	PointCloudPtr output(new pcl::PointCloud<pcl::PointXYZ>);
@@ -168,6 +218,39 @@ PointCloudPtr FrameProcessor::subtractMap(PointCloudPtr aggregatedFrame, PointCl
 				output->push_back(point);
 			}
 		}
+	}
+	return output;
+}
+
+NearestVector::NearestVector() {
+	this->dim = 3;	
+	this->M = 4;
+	this->ef_construction = 100;
+	this->vectors = std::vector<Eigen::Vector3f>();
+	hnswlib::InnerProductSpace ip_space(dim);
+	this->hnsw = new hnswlib::HierarchicalNSW<float>(&ip_space, 1000000, M, ef_construction);
+}
+
+void NearestVector::addVector(Eigen::Vector3f vector) {
+	float* data = new float[3];
+	data[0] = vector(0);
+	data[1] = vector(1);
+	data[2] = vector(2);
+	hnsw->addPoint(data, vectors.size());
+	vectors.push_back(vector);
+}
+
+std::vector<Eigen::Vector3f> NearestVector::getSimilarVectors(Eigen::Vector3f vector, int k) {
+	std::vector<Eigen::Vector3f> output;
+	float* data = new float[3];
+	data[0] = vector(0);
+	data[1] = vector(1);
+	data[2] = vector(2);
+	auto result = hnsw->searchKnn(data, k);
+	while (!result.empty()) {
+		int index = result.top().second;
+		output.push_back(vectors[index]);
+		result.pop();
 	}
 	return output;
 }
