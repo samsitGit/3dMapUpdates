@@ -135,3 +135,18 @@ void applyNoise(Eigen::Matrix4f& pose,float intensity) {
 	pose(1, 3) += noise(1);
 	pose(2, 3) += noise(2);
 }
+
+void downSampleCloud(float leaf_size, PointCloudPtr cloud) {
+	pcl::ApproximateVoxelGrid<pcl::PointXYZ> sor;
+	sor.setInputCloud(cloud);
+	sor.setLeafSize(leaf_size, leaf_size, leaf_size);
+	sor.filter(*cloud);
+}
+
+void removeOutliers(PointCloudPtr cloud, int n_neighbors, float stddev) {
+	pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
+	sor.setInputCloud(cloud);
+	sor.setMeanK(n_neighbors);
+	sor.setStddevMulThresh(stddev);
+	sor.filter(*cloud);
+}

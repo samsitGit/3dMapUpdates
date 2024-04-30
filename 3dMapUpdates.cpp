@@ -8,7 +8,7 @@ using ApproximateVoxelGrid = pcl::ApproximateVoxelGrid<pcl::PointXYZ>;
 using NormalDistributionsTransform = pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>;
 using namespace std::chrono_literals;
 // Loading point clouds
-auto trace = new Trace("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=6/day1");
+auto trace = new Trace("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=12/day1",10);
 auto basemap = new Basemap("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/basemaps/town02/w_dropoff/w_noise");
 Eigen::Matrix4f prevTransformation = Eigen::Matrix4f::Identity();
 
@@ -29,7 +29,6 @@ void clipMapByRadius(const PointCloudPtr& target_cloud, float radius) {
 	crop_box_filter.setMax(Eigen::Vector4f(radius, radius, radius, 1.0));
 	crop_box_filter.setInputCloud(target_cloud);
 	crop_box_filter.filter(*clipped_cloud);
-
 	pcl::io::savePCDFileASCII("clipped_cloud_map.pcd", *clipped_cloud);
 	std::cout << "Clipped cloud saved to clipped_cloud.pcd" << std::endl;
     *target_cloud = *clipped_cloud;

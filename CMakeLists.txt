@@ -12,5 +12,5 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-add_executable (3dMapUpdates 3dMapUpdates.cpp "Trace.cpp" "Trace.h" "Basemap.cpp" "Basemap.h" "utils.h" "utils.cpp" "TraceProcessor.cpp" "TraceProcessor.h" "FrameProcessor.h" "FrameProcessor.cpp")
+add_executable (3dMapUpdates 3dMapUpdates.cpp "Trace.cpp" "Trace.h" "Basemap.cpp" "Basemap.h" "utils.h" "utils.cpp" "TraceProcessor.cpp" "TraceProcessor.h" "FrameProcessor.h" "FrameProcessor.cpp" "Cluster.cpp" "Cluster.h" "ctpl.h")
 target_link_libraries (3dMapUpdates ${PCL_LIBRARIES})
