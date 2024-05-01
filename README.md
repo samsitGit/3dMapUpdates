@@ -14,12 +14,11 @@
 11. Compile the program to get an executable: `make`
 12. Run the file `./3dMapUpdates`
 
-## Using PCP.py (point cloud player) and PCV.py (point cloud viewer)
+## Using visualize.py
 ```
 conda create --name open3d-env python=3.6 # Create a new conda environment named "open3d-env" with Python 3.8
 conda activate open3d-env # Activate the environment
 pip install open3d==0.15.1 # Install specific version of Open3D
-python PCP.py # after you change your file paths
-python PCV.py # after you change your file paths
+python visualize.py # after you change your file paths
 
 ```
