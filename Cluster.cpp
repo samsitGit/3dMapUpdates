@@ -94,6 +94,13 @@ void ClusterTrace::print() {
 	std::cout<< "Distance Moved: " << getDistanceMoved() << std::endl;
 }
 
+void ClusterTrace::reset() {
+	clusters.clear();
+	centroidSum = pcl::PointXYZ();
+	size = 0;
+	lastFrameSeen = -1;
+}
+
 
 ClusterProcessor::ClusterProcessor(double clusterDistanceThreshold,double dynamicObjectThreshold,int aggregateThreshold) {
 	this->clusterDistanceThreshold = clusterDistanceThreshold;
@@ -131,16 +138,29 @@ void ClusterProcessor::addCluster(Cluster& cluster) {
 
 std::vector<Cluster> ClusterProcessor::getClusterUpdates(int currentFrame) {
 	std::vector<Cluster> clusterUpdates;
-	
+	clearOldTraces(currentFrame);
 	for (int i = 0; i < clusterTraces.size(); i++) {
 		ClusterTrace& clusterTrace = clusterTraces[i];
 		if (clusterTrace.lastSeen() == -1) continue;
 		if (clusterTrace.getDistanceMoved() > dynamicObjectThreshold) continue;
 		if(clusterTrace.clusters.size() < aggregateThreshold) continue;
-		clusterTrace.print();
-		clusterUpdates.push_back(Cluster(clusterTrace.getMergedCloud(), currentFrame));
-		clusterTraces.erase(clusterTraces.begin() + i);
+		//clusterTrace.print();
+		auto mergedCluster = Cluster(clusterTrace.getMergedCloud(), currentFrame);
+		clusterUpdates.push_back(mergedCluster);
+		clusterTrace.reset();
+		clusterTrace.addCluster(mergedCluster);
+		//clusterTraces.erase(clusterTraces.begin() + i);
 		
 	}
 	return clusterUpdates;
+}
+
+void ClusterProcessor::clearOldTraces(int frame) {
+	for (int i = 0; i < clusterTraces.size(); i++) {
+		if (clusterTraces[i].lastSeen() < 0) continue;
+		if (frame - clusterTraces[i].lastSeen() > obsoleteThreshold) {
+			clusterTraces.erase(clusterTraces.begin() + i);
+		}
+
+	}
 }

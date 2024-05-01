@@ -8,17 +8,50 @@ using ApproximateVoxelGrid = pcl::ApproximateVoxelGrid<pcl::PointXYZ>;
 using NormalDistributionsTransform = pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>;
 using namespace std::chrono_literals;
 // Loading point clouds
-auto trace = new Trace("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=12/day1",10);
+auto trace = new Trace("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/ego/town02/w_dropoff/w_noise/vehicles=6/day1");
 auto basemap = new Basemap("C:/Users/irfan/OneDrive/Desktop/courses/topics in ai/project/map_compression/data_1/basemaps/town02/w_dropoff/w_noise");
 Eigen::Matrix4f prevTransformation = Eigen::Matrix4f::Identity();
-
 int main() {
     TraceProcessor traceProcessor(basemap, trace);
+    basemap->setSampleSize(0.5);
     std::cout << "Starting trace processor" << std::endl;
     traceProcessor.start();
     return 0;
 }
 
+void sanityTest() {
+    NearestVector nearestVector;
+    PointCloudPtr cloud = trace->loadFrame(0);
+    nearestVector.addVectors(getPointCloudVectors(cloud));
+    for (int i = 0; i < cloud->size(); i++) {
+        auto& point = cloud->points[i];
+        auto closest_points = nearestVector.getSimilarVectors(Eigen::Vector3f(point.x, point.y, point.z), 1);
+        auto& closest_point = closest_points[0];
+        if (closest_point != Eigen::Vector3f(point.x, point.y, point.z)) {
+            throw std::runtime_error("Error: Closest point is not the same as the point itself");
+        }
+    }
+}
+
+void testSimilarity() {
+    NearestVector nearestVector;
+	std::vector<Eigen::Vector3f> vectors;
+    for (int i = 0; i < 100; i++) {
+        auto noise=Eigen::Vector3f::Random();
+		vectors.push_back(Eigen::Vector3f(i, i, i)+noise);
+	}
+	nearestVector.addVectors(vectors);
+	auto similar_vectors = nearestVector.getSimilarVectors(vectors[50], 10);
+    for (auto& vec : similar_vectors) {
+		//print angle between vectors
+        std::cout << angleBetweenVectors(vectors[50], vec) << std::endl;
+	
+	}   
+}
+
+double angleBetweenVectors(const Eigen::Vector3f& v1, const Eigen::Vector3f& v2) {
+	return acos(v1.dot(v2) / (v1.norm() * v2.norm()));
+}
 
 
 void clipMapByRadius(const PointCloudPtr& target_cloud, float radius) {

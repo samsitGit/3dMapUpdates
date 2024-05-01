@@ -24,6 +24,7 @@ void Trace::init() {
 			frames.push_back(frame);
 		}
 	}
+	p.stop(true);
 }
 
 PointCloudPtr Trace::loadFrame(int frame) const{
@@ -55,7 +56,6 @@ void Trace::saveFrame(const PointCloudPtr& frame,int frame_number, const std::st
 		std::cerr << "Label directory " << dir << " does not exist" << std::endl;
 		return;
 	}
-
 	std::string file_path = dir + "/" + std::to_string(frame_number) + ".pcd";
 	pcl::io::savePCDFileASCII(file_path, *frame);
 }

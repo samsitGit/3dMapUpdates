@@ -3,10 +3,11 @@
 Basemap::Basemap(const std::string& directory) {
 	this->directory = directory;
 	this->mapPath = directory + "/complete.pcd";
+	//this->mapPath = directory + "/updated.pcd"; //Map updated with newly appeared points
 	this->map = loadPointCloud(mapPath);
 	this->new_points = PointCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
 	original_map_tree.setInputCloud(map);
-	appeared_points_tree.setInputCloud(new_points);
+	this->leaf_size = 0.01;
 }
 
 PointCloudPtr Basemap::getMap() {
@@ -16,9 +17,10 @@ PointCloudPtr Basemap::getMap() {
 }
 
 
-void Basemap::downSample(float leaf_size) {
+void Basemap::setSampleSize(float leaf_size) {
 	downSampleCloud(leaf_size, map);
 	downSampleCloud(leaf_size, new_points);
+	this->leaf_size=leaf_size;
 }
 
 PointCloudPtr Basemap::clipByRadius(Eigen::Matrix4f transformation, float radius) {
@@ -118,5 +120,12 @@ void Basemap::addCluster(Cluster& cluster) {
 	for (auto& point : *cluster.getCloud()) {
 		new_points->push_back(point);
 	}
+	downSampleCloud(leaf_size, new_points);
 	appeared_points_tree.setInputCloud(new_points);
+}
+
+void Basemap::saveMap(const std::string& filename) {
+	auto map = getMap();
+	std::string path= directory + "/" + filename;
+	pcl::io::savePCDFileASCII(path, *map);
 }

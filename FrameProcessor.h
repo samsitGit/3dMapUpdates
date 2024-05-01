@@ -9,27 +9,25 @@
 using PointCloudPtr = pcl::PointCloud<pcl::PointXYZ>::Ptr;
 
 class NearestVector {
-	//Uses HNSW to find nearest k vectors and also keeps them indexed
+
 private:
-	int dim;
-	int M;
-	int ef_construction;
-	hnswlib::HierarchicalNSW<float>* hnsw;
+	PointCloudPtr cloud;
+	pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 	std::vector<Eigen::Vector3f> vectors;
 public:
 	NearestVector();
-	void addVector(Eigen::Vector3f vector);
+	void addVectors(std::vector<Eigen::Vector3f> vectors);
 	std::vector<Eigen::Vector3f> getSimilarVectors(Eigen::Vector3f vector, int k);
 };
 
 
 class FrameProcessor {
 private:
-	Basemap* basemap;
 	ctpl::thread_pool *pool;
 	PointCloudPtr aggregated_frames;
 	int aggregated_frames_count;
 public:
+	Basemap* basemap;
 	Timer timer;
 	ClusterProcessor *appearedPointsProcessor,*disappearedPointsProcessor;
 	Trace* trace;
@@ -42,4 +40,5 @@ public:
 	PointCloudPtr rayTraceDisappearedPoints(PointCloudPtr frame,Eigen::Matrix4f origin, float resolution=0.05);
 	std::vector<NeighborPoint> rayTracePoint(int id,pcl::PointXYZ point,Eigen::Matrix4f origin, float resolution=0.05);
 	PointCloudPtr subtractMap(PointCloudPtr frame, PointCloudPtr map);
+
 };

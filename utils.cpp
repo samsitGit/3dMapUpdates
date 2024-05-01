@@ -150,3 +150,14 @@ void removeOutliers(PointCloudPtr cloud, int n_neighbors, float stddev) {
 	sor.setStddevMulThresh(stddev);
 	sor.filter(*cloud);
 }
+
+
+std::vector<Eigen::Vector3f> getPointCloudVectors(PointCloudPtr cloud) {
+	std::vector<Eigen::Vector3f> vectors;
+	for (int i = 0; i < cloud->size(); i++) {
+		pcl::PointXYZ point = cloud->points[i];
+		Eigen::Vector3f vec(point.x, point.y, point.z);
+		vectors.push_back(vec);
+	}
+	return vectors;
+}

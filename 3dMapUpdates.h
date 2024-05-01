@@ -16,3 +16,6 @@ double alignAndCalculateError(int frame, const PointCloudPtr& target_cloud, std:
 void mergeFrameWithBaseMap(const PointCloudPtr& basemap, const PointCloudPtr& frame, const PointCloudPtr& merged, const Eigen::Matrix4f& pose, bool downSample = false);
 void clipMapByRadius(const PointCloudPtr& target_cloud, float radius);
 void testClipping();
+void sanityTest();
+void testSimilarity();
+double angleBetweenVectors(const Eigen::Vector3f& v1, const Eigen::Vector3f& v2);

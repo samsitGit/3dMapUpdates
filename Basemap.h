@@ -11,9 +11,10 @@ class Basemap {
 		std::string mapPath;
 		PointCloudPtr map,new_points;
 		pcl::KdTreeFLANN<pcl::PointXYZ> original_map_tree,appeared_points_tree;
+		float leaf_size;
 	public:
 		Basemap(const std::string& directory);
-		void downSample(float leaf_size=0.5);
+		void setSampleSize(float leaf_size=0.5);
 		PointCloudPtr clipByRadius(Eigen::Matrix4f transformation, float radius);
 		PointCloudPtr getMap();
 		PointCloudPtr integrateFrame(const PointCloudPtr& frame, const Eigen::Matrix4f& pose);
@@ -23,7 +24,6 @@ class Basemap {
 		void addCluster(Cluster& cluster);
 		std::vector<NeighborPoint> getMapOnlyNeighbors(const pcl::PointXYZ& point, int k);
 		pcl::PointXYZ getPoint(int index);
-		//convert base map to mesh and return it
-		pcl::PolygonMesh getMesh();
+		void saveMap(const std::string& name);
 
 };

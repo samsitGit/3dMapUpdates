@@ -41,6 +41,7 @@ private:
 		int lastSeen() { return lastFrameSeen; }
 		double getDistanceMoved();
 		void print();
+		void reset();
 };
 
 
@@ -50,11 +51,13 @@ class ClusterProcessor {
 	private:
 		std::vector<ClusterTrace> clusterTraces;
 		double clusterDistanceThreshold,dynamicObjectThreshold, aggregateThreshold;
-		
+		int obsoleteThreshold = 100;
 	public:
 		ClusterProcessor(double clusterDistanceThreshold,double dynamicObjectThreshold,int aggregateThreshold);
 		void addCluster(Cluster& cluster);
 		std::vector<Cluster> getClusterUpdates(int currentFrame);
 		std::vector<ClusterTrace> getClusterTraces() { return clusterTraces; }
+		void setObsoleteThreshold(int threshold) { obsoleteThreshold = threshold; }
+		void clearOldTraces(int frame);
 };
 

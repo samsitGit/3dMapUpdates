@@ -6,7 +6,7 @@ void Timer::start(std::string name) {
 
 void Timer::stop(std::string name) {
 	endTimes[name].push_back(high_resolution_clock::now());
-	std::cout << name <<" took " << duration_cast<milliseconds>(endTimes[name].back() - startTimes[name].back()).count() << " ms" << std::endl;
+	//std::cout << name <<" "<< endTimes[name].size() << " took " << duration_cast<milliseconds>(endTimes[name].back() - startTimes[name].back()).count() << " ms" << std::endl;
 }
 
 void Timer::print() {
@@ -19,7 +19,8 @@ void Timer::print() {
 			auto& start = startTime[i];
 			auto& end = endTime[i];
 			auto duration = duration_cast<milliseconds>(end - start);
-			std::cout <<duration.count()<< std::endl;
+			std::cout <<duration.count()<< " ";
 		}
+		std::cout << std::endl;
 	}
 }

@@ -37,3 +37,4 @@ double euclideanDistance(const Eigen::Matrix<float, 3, 1>& pose1, const Eigen::M
 void applyNoise(Eigen::Matrix4f& pose,float intensity);
 void downSampleCloud(float leaf_size, PointCloudPtr cloud);
 void removeOutliers(PointCloudPtr cloud, int n_neighbors, float stddev);
+std::vector<Eigen::Vector3f> getPointCloudVectors(PointCloudPtr cloud);
