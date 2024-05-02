@@ -30,12 +30,11 @@ std::vector<PointCloudPtr> FrameProcessor::processFrame(int frame) {
 		appearedPointsProcessor->addCluster(Cluster(cluster, frame));
 	}
 	timer.start("map clipping");
-	PointCloudPtr clipped_map=basemap->clipByRadius(ground_truth, 20);
+	PointCloudPtr clipped_map=basemap->clipByRadius(ground_truth, 40);
 	timer.stop("map clipping");
 	//std::cout<<"Map size: "<<clipped_map->size()<<std::endl;
 	timer.start("disappeared cluster extraction");
-	PointCloudPtr disappearedPoints = vectorRayTraceDisappearedPoints(frame_cloud, clipped_map, ground_truth, 0.01);
-	pcl::transformPointCloud(*disappearedPoints, *disappearedPoints, ground_truth);
+	PointCloudPtr disappearedPoints = vectorRayTraceDisappearedPoints(frame_cloud, clipped_map, ground_truth, 0.005);
 	clusters = extractClusters(disappearedPoints);
 	timer.stop("disappeared cluster extraction");
 	//std::cout<<"Number of disappeared points: "<<disappearedPoints->size()<<std::endl;
@@ -67,7 +66,6 @@ std::vector<PointCloudPtr> FrameProcessor::processFrame(int frame) {
 	clouds.push_back(addedPointUpdates);
 	clouds.push_back(disappearedPoints);
 	clouds.push_back(disappearedPointUpdates);
-	//clouds.push_back(clipped_map);
 	return clouds;
 }
 
@@ -117,7 +115,7 @@ PointCloudPtr FrameProcessor::subtract(PointCloudPtr frame) {
 std::vector<Eigen::Vector3f> FrameProcessor::vectorRayTracePoint(Eigen::Vector3f lead, NearestVector* nearestVector, float radius) {
 	std::vector<Eigen::Vector3f> output;
 	std::vector<Eigen::Vector3f> similarVectors = nearestVector->getSimilarVectors(lead, 20);
-	float eps = 0.2; //Expected maximum localization error in meters
+	float eps = 1; //Expected maximum localization error in meters
 	//Verify if the projection of a similar vec is radius away from the lead
 	for (const auto& vector : similarVectors) {
 		//If magnitude of vec is higher than lead, ignore
@@ -144,10 +142,11 @@ PointCloudPtr FrameProcessor::vectorRayTraceDisappearedPoints(PointCloudPtr fram
 	//use ctpl to parallelize this
 	std::vector<std::future<std::vector<Eigen::Vector3f>>> futures;
 	NearestVector* nearestVector = new NearestVector();
-	pcl::transformPointCloud(*map, *transformed_map, origin.inverse()); // Transform map to frame
+	Eigen::Matrix4f pose = origin;
+	pcl::transformPointCloud(*map, *transformed_map, pose.inverse()); // Transform map to frame
 	timer.start("indexing vectors");
 	auto vectors=getPointCloudVectors(transformed_map);
-	
+
 	nearestVector->addVectors(vectors);
 	timer.stop("indexing vectors");
 	for (int i = 0; i < frame->size(); i++) {
@@ -166,7 +165,6 @@ PointCloudPtr FrameProcessor::vectorRayTraceDisappearedPoints(PointCloudPtr fram
 			output->push_back(pcl_point);
 		}
 	}
-	
 	pcl::transformPointCloud(*output, *output, origin); // Transform back to map
 	return output;
 }

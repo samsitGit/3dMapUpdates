@@ -2,8 +2,8 @@
 
 Basemap::Basemap(const std::string& directory) {
 	this->directory = directory;
-	this->mapPath = directory + "/complete.pcd";
-	//this->mapPath = directory + "/updated.pcd"; //Map updated with newly appeared points
+	//this->mapPath = directory + "/complete-shrinked.pcd";
+	this->mapPath = directory + "/updated.pcd"; //Map updated with newly appeared points
 	this->map = loadPointCloud(mapPath);
 	this->new_points = PointCloudPtr(new pcl::PointCloud<pcl::PointXYZ>);
 	original_map_tree.setInputCloud(map);
@@ -24,13 +24,17 @@ void Basemap::setSampleSize(float leaf_size) {
 }
 
 PointCloudPtr Basemap::clipByRadius(Eigen::Matrix4f transformation, float radius) {
+	
 	PointCloudPtr clipped_map(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::CropBox<pcl::PointXYZ> cropFilter;
 	PointCloudPtr complete_map = getMap();
 	cropFilter.setInputCloud(complete_map);
-	cropFilter.setTranslation(transformation.block<3, 1>(0, 3));
-	cropFilter.setMin(Eigen::Vector4f(-radius, -radius, -radius, 1.0));
-	cropFilter.setMax(Eigen::Vector4f(radius, radius, radius, 1.0));
+	Eigen::Vector4f minPoint(-radius, -radius, -radius, 1);
+	Eigen::Vector4f maxPoint(radius, radius, radius, 1);
+	minPoint+=transformation.block<4,1>(0,3);
+	maxPoint+=transformation.block<4,1>(0,3);
+	cropFilter.setMin(minPoint);
+	cropFilter.setMax(maxPoint);
 	cropFilter.filter(*clipped_map);
 	return clipped_map;
 }
