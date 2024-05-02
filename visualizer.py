@@ -188,14 +188,14 @@ class InteractiveVisualizer:
         vis.destroy_window()
 
 # Example usage:
-sta1_path = ""
-sta2_path = "temp/0.pcd"
+sta1_path = "aa699appeared.pcd"
+sta2_path = ""
 sta3_path = "no static"
 sta4_path = "no static"
 sta5_path = "no static"
 sta6_path = "no static"
-ego1_path = "ego"
-ego2_path = ""
+ego1_path = "ego_localized"
+ego2_path = "2"
 ego3_path = "no ego"
 ego4_path = "no ego"
 ego5_path = "no ego"
@@ -228,15 +228,15 @@ sta4_color = (RED, RED)
 sta5_color = (RED, RED)
 sta6_color = (RED, RED)
 
-ego1_color = (RED, PALE_RED)
-ego2_color = (LIGHT_BLUE, BLUE)
+ego1_color = (LIGHT_BLUE, BLUE)
+ego2_color = (RED, PALE_RED)
 ego3_color = (BLUE, LIGHT_BLUE)
 ego4_color = (YELLOW, PALE_RED)
 ego5_color = (CYAN, LIGHT_CYAN)
 ego6_color = (MAGENTA, LIGHT_MAGENTA)
 
-sta_colors = [ego1_color, ego2_color, ego3_color,
-          ego4_color, ego5_color, ego6_color]
+sta_colors = [sta1_color, sta2_color, sta3_color,
+          sta4_color, sta5_color, sta6_color]
 
 ego_colors = [ego1_color, ego2_color, ego3_color,
           ego4_color, ego5_color, ego6_color]

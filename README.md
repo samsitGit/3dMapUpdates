@@ -32,6 +32,7 @@ conda activate open3d-env # Activate the environment
 pip install open3d==0.15.1 # Install specific version of Open3D
 python visualizer.py # after you change your file paths
 ```
+You can use , . to go back or forward one frame respectively, depending on your step size. You can also pause, move around, ctrl+click, right click, and press R to reverse the player.
 
 ## Using server and clients
 ```
