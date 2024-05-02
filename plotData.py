@@ -31,41 +31,32 @@ stacked_data = [
     disappeared_cluster_updates
 ]
 
-# Colors and labels for the stacked bar chart
+# Cumulative sum to stack the bars
+cumulative = [0] * len(frames)
+for data in stacked_data:
+    cumulative = [sum(x) for x in zip(cumulative, data)]
+
+# Plotting the stacked bar chart
+fig, ax1 = plt.subplots()
 colors = ['red', 'blue', 'green', 'purple', 'orange']
 labels = ['Map Clipping', 'Appeared Cluster Extraction', 'Appeared Cluster Updates',
           'Disappeared Cluster Extraction + Indexing Vectors', 'Disappeared Cluster Updates']
 
-# Plotting
-fig, ax1 = plt.subplots()
-
-# Calculate total height of bars to adjust y-limits
-cumulative_height = [sum(values) for values in zip(*stacked_data)]
-
-# Plot bars for latency data
 bottom = [0] * len(frames)
 for data, color, label in zip(stacked_data, colors, labels):
-    ax1.bar(frames, data, bottom=bottom, label=label, color=color, width=1)
+    ax1.bar(frames, data, bottom=bottom, label=label, color=color)
     bottom = [sum(x) for x in zip(bottom, data)]
 
 ax1.set_xlabel('Frame')
 ax1.set_ylabel('Latency Time (seconds)')
-ax1.set_title('Latency and Frame Sizes per Frame')
+ax1.set_title('End-to-End Latency and Frame Sizes per Frame')
 ax1.legend(loc='upper left')
-
-# Set limits for latency axis based on the maximum stack height
-max_latency = max(cumulative_height)
-ax1.set_ylim(0, max_latency * 1.1)  # ensure the top of the bar is visible
 
 # Create a second y-axis for frame sizes
 ax2 = ax1.twinx()
-ax2.plot(frames, frame_sizes, label='Update Size', color='black', linewidth=2)
-ax2.set_ylabel('Update Size (# of points)', color='black')
+ax2.plot(frames, frame_sizes, label='Frame Size', color='black', linewidth=2)
+ax2.set_ylabel('Frame Size (arbitrary units)', color='black')
 ax2.tick_params(axis='y', labelcolor='black')
 ax2.legend(loc='upper right')
-
-# Set limits for frame size axis to align zero with the first axis
-max_frame_size = max(frame_sizes)
-ax2.set_ylim(0, max_frame_size * (max_latency * 1.1) / max_latency)  # adjust the top limit to align the zero
 
 plt.show()
