@@ -4,6 +4,7 @@
 1. Follow this to set up and install CMake and vcpkg:
 https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-cmd
 
+<<<<<<< Updated upstream
 2. Run this command to set up vcpkg related libraries:
 `vcpkg install`
 
@@ -16,3 +17,19 @@ https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-
 5. Modify your `CMakePresets.json` to set all `"DCMAKE_TOOLCHAIN_FILE"` (there are multiple) to vcpkg.cmake located in scripts > buildsystems folder where you installed vcpkg.
 
 6. Now you can open this diretory in Visual Studio (install it if you haven't), and it will configure it.
+=======
+## Using visualizer.py
+```
+conda create --name open3d-env python=3.6 # Create a new conda environment named "open3d-env" with Python 3.8
+conda activate open3d-env # Activate the environment
+pip install open3d==0.15.1 # Install specific version of Open3D
+python visualizer.py # after you change your file paths
+```
+
+## Using server and clients
+```
+python map_cloud_server.py
+python map_cloud_client.py # you need to change path of an input trace
+pip install <package> # if using the environment, you shouldn't be missing any major packages but if so, go ahead and install them
+```
+>>>>>>> Stashed changes
