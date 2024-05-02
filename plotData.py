@@ -59,4 +59,26 @@ ax2.set_ylabel('Frame Size (arbitrary units)', color='black')
 ax2.tick_params(axis='y', labelcolor='black')
 ax2.legend(loc='upper right')
 
-plt.show()
+#plt.show()
+
+import pandas as pd
+
+# Calculating averages
+averages = {
+    'Stage': ['Map Clipping', 'Appeared Cluster Extraction', 'Appeared Cluster Updates',
+              'Disappeared Cluster Extraction', 'Indexing Vectors', 'Disappeared Cluster Updates'],
+    'Average Value': [
+        sum(map_clipping) / len(map_clipping),
+        sum(appeared_cluster_extraction) / len(appeared_cluster_extraction),
+        sum(appeared_cluster_updates) / len(appeared_cluster_updates),
+        sum(disappeared_cluster_extraction) / len(disappeared_cluster_extraction),
+        sum(indexing_vectors) / len(indexing_vectors),
+        sum(disappeared_cluster_updates) / len(disappeared_cluster_updates)
+    ]
+}
+
+# Create DataFrame
+average_df = pd.DataFrame(averages)
+
+# Display the DataFrame
+print(average_df)
