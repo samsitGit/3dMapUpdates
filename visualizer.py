@@ -90,7 +90,7 @@ class InteractiveVisualizer:
             start_index = self.loaded_frames
             end_index = start_index + count
             files_to_load = self.files_per_dir[dir_index][start_index:end_index]
-            color_pair = self.sta_colors[dir_index] if dir_index < len(self.sta_colors) else ([1, 1, 1], [1, 1, 1])
+            color_pair = self.ego_colors[dir_index] if dir_index < len(self.ego_colors) else ([1, 1, 1], [1, 1, 1])
 
             with ThreadPoolExecutor(max_workers=6) as executor:
                 futures = [
@@ -188,8 +188,8 @@ class InteractiveVisualizer:
         vis.destroy_window()
 
 # Example usage:
-sta1_path = "" #"complete.pcd"
-sta2_path = "" #"temp/0.pcd"
+sta1_path = ""
+sta2_path = "temp/0.pcd"
 sta3_path = "no static"
 sta4_path = "no static"
 sta5_path = "no static"
@@ -221,7 +221,7 @@ LIGHT_MAGENTA = [1, 0.5, 1]
 # Define gradient variables
 # to have one constant color, just do (RED, RED) for example
 # pass in None instead if you want default colors
-sta1_color = (LIGHT_BLUE, BLUE)
+sta1_color = (RED, RED)
 sta2_color = (RED, RED)
 sta3_color = (RED, RED)
 sta4_color = (RED, RED)
@@ -235,8 +235,8 @@ ego4_color = (YELLOW, PALE_RED)
 ego5_color = (CYAN, LIGHT_CYAN)
 ego6_color = (MAGENTA, LIGHT_MAGENTA)
 
-sta_colors = [sta1_color, sta2_color, sta3_color,
-          sta4_color, sta5_color, sta6_color]
+sta_colors = [ego1_color, ego2_color, ego3_color,
+          ego4_color, ego5_color, ego6_color]
 
 ego_colors = [ego1_color, ego2_color, ego3_color,
           ego4_color, ego5_color, ego6_color]

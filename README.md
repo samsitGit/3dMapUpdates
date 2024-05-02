@@ -25,12 +25,12 @@ https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-
 5. Modify your `CMakePresets.json` to set all `"DCMAKE_TOOLCHAIN_FILE"` (there are multiple) to vcpkg.cmake located in scripts > buildsystems folder where you installed vcpkg.
 6. Now you can open this diretory in Visual Studio (install it if you haven't), and it will configure it.
 
-## Using visualize.py
+## Using visualizer.py
 ```
 conda create --name open3d-env python=3.6 # Create a new conda environment named "open3d-env" with Python 3.8
 conda activate open3d-env # Activate the environment
 pip install open3d==0.15.1 # Install specific version of Open3D
-python visualize.py # after you change your file paths
+python visualizer.py # after you change your file paths
 ```
 
 ## Using server and clients
