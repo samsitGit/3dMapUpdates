@@ -6,3 +6,6 @@ out/
 /vcpkg_installed
 CMakePresets.json
 *.json
+/1
+/appearedpoints
+*.pcd
