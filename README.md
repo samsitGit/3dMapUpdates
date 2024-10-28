@@ -70,8 +70,8 @@ Feel free to contribute to the project by forking the repository, creating new b
 5. In vcpkg directory `cd vcpkg`, run the file `./bootstrap-vcpkg.sh`
 6. Integrate install: `vcpkg integrate install`
 7. Install PCL with visualization module - `vcpkg install pcl[visualization]` (This can take 30 minutes or so)
-8. Git clone the repo `git clone https://github.com/samsitGit/CSCI739_Group4_Project.git`
-9. Go to the project `cd CSCI739_Group4_Project` then configure the project with CMake: `cmake`
+8. Git clone the repo `git clone https://github.com/samsitGit/3dMapUpdates`
+9. Go to the project `cd 3dMapUpdates` then configure the project with CMake: `cmake`
 10. You may want to go into your 3dMapUpdates.cpp to change file paths for your ego and a complete trace unless you are on Irfan's computer.
 11. Compile the program to get an executable: `make`
 12. Run the file `./3dMapUpdates`
