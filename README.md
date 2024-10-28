@@ -46,12 +46,12 @@ python map_cloud_client.py # Run the client after setting the input trace path
 The CMake project utilizes a previously captured LIDAR trace for detecting map updates. It features a custom ray-tracing algorithm for efficient change detection.
 
 1. Ensure CMake is installed on your system.
-2. Configure the project and build:
+2. Configure the project, build and run:
 
 ```bash
-mkdir build && cd build
-cmake ..
+cmake 
 make
+./3dMapUpdates
 ```
 
 3. Run the executable to process the LIDAR trace.
